@@ -7,10 +7,13 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
-using myBot.DataModels;
+
 using myBot.Models;
 using System.Collections.Generic;
 using System.Web.UI.WebControls;
+using Weather_Bot;
+using System.Web;
+using Weather_Bot.DataModels;
 
 namespace myBot
 {
@@ -19,6 +22,7 @@ namespace myBot
     {
         private string endOutput;
         private string userMessage;
+        public string result;
 
         /// <summary>
         /// POST: api/Messages
@@ -41,10 +45,10 @@ namespace myBot
 
 
 
-                string greeting = "Hello, welcome to Easy Bank";
+                string endOutput = "Hello, welcome to Easy Bank";
                 if (userData.GetProperty<bool>("SentGreeting"))
                 {
-                    greeting = "Hello again";
+                    endOutput = "Hello again";
                     
                 }
 
@@ -56,28 +60,29 @@ namespace myBot
 
 
                 
-                bool isWeatherRequest = true;
+                bool isBankRequest = true;
                 var userMessage = activity.Text;
 
                 if (userMessage.ToLower().Contains("clear"))
                 {
-                    greeting = "User data cleared";
+                    endOutput = "User data cleared";
                     await stateClient.BotState.DeleteStateForUserAsync(activity.ChannelId, activity.From.Id);
-                    isWeatherRequest = false;
+                    isBankRequest = false;
+                    
                 }
-                Activity reply = activity.CreateReply(greeting);
-                await connector.Conversations.ReplyToActivityAsync(reply);
+                //Activity reply = activity.CreateReply(endOutput);
+                //await connector.Conversations.ReplyToActivityAsync(reply);
 
+               
 
-
-                if (userMessage.ToLower().Equals("msa"))
+                if (userMessage.ToLower().Equals("easy bank"))
                 {
-                    Activity replyToConversation = activity.CreateReply("MSA information");
+                    Activity replyToConversation = activity.CreateReply("Bank Details");
                     replyToConversation.Recipient = activity.From;
                     replyToConversation.Type = "message";
                     replyToConversation.Attachments = new List<Attachment>();
                     List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: "https://cdn2.iconfinder.com/data/icons/ios-7-style-metro-ui-icons/512/MetroUI_iCloud.png"));
+                    cardImages.Add(new CardImage(url: "http://arkansascivpro.com/wp-content/uploads/2012/02/Fotolia_429688_XS-dollar-symbol-gold-300x300.jpg"));
                     List<CardAction> cardButtons = new List<CardAction>();
                     CardAction plButton = new CardAction()
                     {
@@ -88,8 +93,7 @@ namespace myBot
                     cardButtons.Add(plButton);
                     ThumbnailCard plCard = new ThumbnailCard()
                     {
-                        Title = "Visit MSA",
-                        Subtitle = "The MSA Website is here",
+                        Title = "Visit Easy Bank",
                         Images = cardImages,
                         Buttons = cardButtons
                     };
@@ -101,95 +105,125 @@ namespace myBot
 
                 }
 
-                if (userMessage.ToLower().Contains("currency rate"))
+                if (userMessage.ToLower().Equals("get timelines"))
                 {
-                    string[] value = userMessage.Split(' ');
-                    double AUD = rootObject.rates.AUD;
-                 
-                    double BGN = rootObject.rates.BGN;
-                    double CAD = rootObject.rates.CAD;
-                    double GBP = rootObject.rates.GBP;
-                    double HKD = rootObject.rates.HKD;
-                    double JPY = rootObject.rates.JPY;
-                    double USD = rootObject.rates.USD;
-                    double ZAR = rootObject.rates.ZAR;
-
-                    if (value[2].ToLower() == "aud" )
+                    List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+                    endOutput = "";
+                    foreach (moodTrialDB t in timelines)
                     {
-                        endOutput = value[2].ToUpper() + " " + AUD;
-                        
+                        endOutput += "[" + t.Date + "] People: " + t.Name + ", Balance " + t.Cheque + "\n\n";
                     }
+                    isBankRequest = false;
 
-                    if (value[2].ToLower() == "bgn")
+                }
+
+                if (userMessage.ToLower().Equals("new timeline"))
+                {
+                    moodTrialDB timeline = new moodTrialDB()
                     {
-                        endOutput = value[2].ToUpper() + " " + BGN;
-                    }
-
-                    if (value[2].ToLower() == "cad")
-                    {
-                        endOutput = value[2].ToUpper() + " " + CAD;
-                    }
-
-                    if (value[2].ToLower() == "gbp")
-                    {
-                        endOutput = value[2].ToUpper() + " " + GBP;
-                    }
-
-                    if (value[2].ToLower() == "hkd")
-                    {
-                        endOutput = value[2].ToUpper() + " " + HKD;
-                    }
-
-                    if (value[2].ToLower() == "jpy")
-                    {
-                        endOutput = value[2].ToUpper() + " " + JPY;
-                    }
-
-                    if (value[2].ToLower() == "usd")
-                    {
-                        endOutput = value[2].ToUpper() + " " + USD;
-
-                    }
-
-                    if (value[2].ToLower() == "zar")
-                    {
-                        endOutput = value[2].ToUpper() + " " + ZAR;
-                    }
-
-                    Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
-                    replyToConversation.Recipient = activity.From;
-                    replyToConversation.Type = "message";
-                    replyToConversation.Attachments = new List<Attachment>();
-                    List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
-                    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
-                    List<CardAction> cardButtons = new List<CardAction>();
-                    CardAction plButton = new CardAction()
-                    {
-                        Value = "http://www.xe.com/currencyconverter/",
-                        Type = "openUrl",
-                        Title = "Click here for a converter."
+                        Name = "Jack",
+                        Cheque = "500",
+                        Savings = "1000",
+                        Date = DateTime.Now
                     };
-                    cardButtons.Add(plButton);
-                    HeroCard plCard = new HeroCard()
-                    {
-                        Title = endOutput,
-                        Subtitle = "",
-                        Images = cardImages,
-                        Buttons = cardButtons
-                    };
-                    Attachment plAttachment = plCard.ToAttachment();
-                    replyToConversation.Attachments.Add(plAttachment);
-                    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+
+                    await AzureManager.AzureManagerInstance.AddTimeline(timeline);
+
+                    isBankRequest = false;
+
+                    endOutput = "New timeline added [" + timeline.Date + "]";
                 }
 
 
+                if (userMessage.ToLower().Contains("currency rate"))
+                {
+                        string[] value = userMessage.Split(' ');
+                        double AUD = rootObject.rates.AUD;
 
-                //Activity reply = activity.CreateReply(endOutput);
-                //await connector.Conversations.ReplyToActivityAsync(reply);
-                return Request.CreateResponse(HttpStatusCode.OK);
+                        double BGN = rootObject.rates.BGN;
+                        double CAD = rootObject.rates.CAD;
+                        double GBP = rootObject.rates.GBP;
+                        double HKD = rootObject.rates.HKD;
+                        double JPY = rootObject.rates.JPY;
+                        double USD = rootObject.rates.USD;
+                        double ZAR = rootObject.rates.ZAR;
+
+                        if (value[2].ToLower() == "aud")
+                        {
+                            result = value[2].ToUpper() + " " + AUD;
+
+                        }
+
+                        if (value[2].ToLower() == "bgn")
+                        {
+                            result = value[2].ToUpper() + " " + BGN;
+                        }
+
+                        if (value[2].ToLower() == "cad")
+                        {
+                            result = value[2].ToUpper() + " " + CAD;
+                        }
+
+                        if (value[2].ToLower() == "gbp")
+                        {
+                            result = value[2].ToUpper() + " " + GBP;
+                        }
+
+                        if (value[2].ToLower() == "hkd")
+                        {
+                            result = value[2].ToUpper() + " " + HKD;
+                        }
+
+                        if (value[2].ToLower() == "jpy")
+                        {
+                            result = value[2].ToUpper() + " " + JPY;
+                        }
+
+                        if (value[2].ToLower() == "usd")
+                        {
+                            result = value[2].ToUpper() + " " + USD;
+
+                        }
+
+                        if (value[2].ToLower() == "zar")
+                        {
+                            result = value[2].ToUpper() + " " + ZAR;
+                        }
+
+                        Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
+                        replyToConversation.Recipient = activity.From;
+                        replyToConversation.Type = "message";
+                        replyToConversation.Attachments = new List<Attachment>();
+                        List<CardImage> cardImages = new List<CardImage>();
+                        cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
+                        cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
+                        List<CardAction> cardButtons = new List<CardAction>();
+                        CardAction plButton = new CardAction()
+                        {
+                            Value = "http://www.xe.com/currencyconverter/",
+                            Type = "openUrl",
+                            Title = "Click here for a converter."
+                        };
+                        cardButtons.Add(plButton);
+                        HeroCard plCard = new HeroCard()
+                        {
+                            Title = result,
+                            Subtitle = "",
+                            Images = cardImages,
+                            Buttons = cardButtons
+                        };
+                        Attachment plAttachment = plCard.ToAttachment();
+                        replyToConversation.Attachments.Add(plAttachment);
+                        var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+                    }
 
 
+
+                    Activity reply = activity.CreateReply(endOutput);
+                    await connector.Conversations.ReplyToActivityAsync(reply);
+                    return Request.CreateResponse(HttpStatusCode.OK);
+
+                
 
             }
             else

@@ -1,5 +1,5 @@
 ﻿using Microsoft.WindowsAzure.MobileServices;
-using myBot.DataModels;
+using Weather_Bot.DataModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,12 +13,12 @@ namespace Weather_Bot
 
         private static AzureManager instance;
         private MobileServiceClient client;
-        private IMobileServiceTable<contorsoDB> timelineTable;
+        private IMobileServiceTable<moodTrialDB> timelineTable;
 
         private AzureManager()
         {
-            this.client = new MobileServiceClient("http://contorsobank1.azurewebsites.net");
-            this.timelineTable = this.client.GetTable<contorsoDB>();
+            this.client = new MobileServiceClient("http://bankbot13.azurewebsites.net");
+            this.timelineTable = this.client.GetTable<moodTrialDB>();
         }
 
         public MobileServiceClient AzureClient
@@ -39,12 +39,12 @@ namespace Weather_Bot
             }
         }
 
-        public async Task AddTimeline(contorsoDB timeline)
+        public async Task AddTimeline(moodTrialDB timeline)
         {
             await this.timelineTable.InsertAsync(timeline);
         }
 
-        public async Task<List<contorsoDB>> GetTimelines()
+        public async Task<List<moodTrialDB>> GetTimelines()
         {
             return await this.timelineTable.ToListAsync();
         }
