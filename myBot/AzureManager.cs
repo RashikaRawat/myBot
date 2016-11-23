@@ -48,5 +48,15 @@ namespace Weather_Bot
         {
             return await this.timelineTable.ToListAsync();
         }
+
+        public async Task DeleteTimeline(moodTrialDB timeline)
+        {
+            await this.timelineTable.DeleteAsync(timeline);
+        }
+
+        public async Task UpdateTimeline(moodTrialDB timeline)
+        {
+            await this.timelineTable.UpdateAsync(timeline);
+        }
     }
 }

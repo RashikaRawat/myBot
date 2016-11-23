@@ -51,8 +51,11 @@ namespace myBot
                             convertFound = true;
                             StockRateString = await GetConversion(StLUIS.entities[0].entity);
                             break;
-                        
-                        
+
+                        case "gbp convert":
+                            convertFound = true;
+                            StockRateString = await GetConversion(StLUIS.entities[0].entity);
+                            break;
 
                         default:
                             StockRateString = "Sorry, I am not getting you...";
@@ -71,8 +74,8 @@ namespace myBot
                     replyToConversation.Type = "message";
                     replyToConversation.Attachments = new List<Attachment>();
                     List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
-                    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
+                    cardImages.Add(new CardImage(url: "http://arkansascivpro.com/wp-content/uploads/2012/02/Fotolia_429688_XS-dollar-symbol-gold-300x300.jpg"));
+
                     List<CardAction> cardButtons = new List<CardAction>();
                     CardAction plButton = new CardAction()
                     {
@@ -81,7 +84,7 @@ namespace myBot
                         Title = "Click here for a converter."
                     };
                     cardButtons.Add(plButton);
-                    HeroCard plCard = new HeroCard()
+                    ThumbnailCard plCard = new ThumbnailCard()
                     {
                         Title = result,
                         Subtitle = "",
@@ -90,7 +93,8 @@ namespace myBot
                     };
                     Attachment plAttachment = plCard.ToAttachment();
                     replyToConversation.Attachments.Add(plAttachment);
-                    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+                    await connector.Conversations.SendToConversationAsync(replyToConversation);
+                    return Request.CreateResponse(HttpStatusCode.OK);
                 }
 
                 string endOutput = "Hello, welcome to Easy Bank";
@@ -122,6 +126,29 @@ namespace myBot
                 //await connector.Conversations.ReplyToActivityAsync(reply);
 
 
+                if (userMessage.ToLower().Substring(0, 8).Equals("set name"))
+                {
+                    string myName = "Hi " + userMessage.Substring(9) + " .";
+                    userData.SetProperty<string>("HomeCity", myName);
+                    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
+                    endOutput = myName;
+                    isBankRequest = false;
+                }
+
+
+                if (userMessage.ToLower().Equals("name"))
+                {
+                    string myName = userData.GetProperty<string>("HomeCity");
+                    if (myName == null)
+                    {
+                        endOutput = "Home City not assigned";
+                        isBankRequest = false;
+                    }
+                    else
+                    {
+                        activity.Text = myName;
+                    }
+                }
 
                 if (userMessage.ToLower().Equals("easy bank"))
                 {
@@ -182,7 +209,23 @@ namespace myBot
                     endOutput = "New timeline added [" + timeline.Date + "]";
                 }
 
-
+                if (userMessage.ToLower().Contains("delete record"))
+                {
+                    string[] delete = userMessage.Split();
+                    List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+                    endOutput = "";
+                    foreach (moodTrialDB t in timelines)
+                    {
+                        if (activity.From.Name.Contains(t.Name) )
+                        {
+                            await AzureManager.AzureManagerInstance.DeleteTimeline(t);
+                        }
+                        endOutput = "We have deleted " + t.Name + "'s account" ;
+                        Activity deleted = activity.CreateReply(endOutput);
+                        await connector.Conversations.ReplyToActivityAsync(deleted);
+                    }
+                    isBankRequest = false;
+                }
                 //if (userMessage.ToLower().Contains("currency rate"))
                 //{
 
