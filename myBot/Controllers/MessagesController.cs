@@ -23,6 +23,7 @@ namespace myBot
         private string endOutput;
         private string userMessage;
         public string result;
+        public bool convertFound = false;
 
         /// <summary>
         /// POST: api/Messages
@@ -34,22 +35,69 @@ namespace myBot
             {
 
 
-                
+
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
                 StateClient stateClient = activity.GetStateClient();
                 BotData userData = await stateClient.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
-                currencyobject.RootObject rootObject;
-                HttpClient client = new HttpClient();
-                string x = await client.GetStringAsync(new Uri("http://api.fixer.io/latest?base=NZD"));
-                rootObject = JsonConvert.DeserializeObject<currencyobject.RootObject>(x);
 
 
+                string StockRateString;
+                RootObject StLUIS = await GetEntityFromLUIS(activity.Text);
+                if (StLUIS.intents.Count() > 0)
+                {
+                    switch (StLUIS.intents[0].intent)
+                    {
+                        case "aud conversion":
+                            convertFound = true;
+                            StockRateString = await GetConversion(StLUIS.entities[0].entity);
+                            break;
+                        
+                        
+
+                        default:
+                            StockRateString = "Sorry, I am not getting you...";
+                            break;
+                    }
+                }
+                else
+                {
+                    StockRateString = "Sorry, I am not getting you...";
+                }
+
+                if (convertFound == true)
+                {
+                    Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
+                    replyToConversation.Recipient = activity.From;
+                    replyToConversation.Type = "message";
+                    replyToConversation.Attachments = new List<Attachment>();
+                    List<CardImage> cardImages = new List<CardImage>();
+                    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
+                    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
+                    List<CardAction> cardButtons = new List<CardAction>();
+                    CardAction plButton = new CardAction()
+                    {
+                        Value = "http://www.xe.com/currencyconverter/",
+                        Type = "openUrl",
+                        Title = "Click here for a converter."
+                    };
+                    cardButtons.Add(plButton);
+                    HeroCard plCard = new HeroCard()
+                    {
+                        Title = result,
+                        Subtitle = "",
+                        Images = cardImages,
+                        Buttons = cardButtons
+                    };
+                    Attachment plAttachment = plCard.ToAttachment();
+                    replyToConversation.Attachments.Add(plAttachment);
+                    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+                }
 
                 string endOutput = "Hello, welcome to Easy Bank";
                 if (userData.GetProperty<bool>("SentGreeting"))
                 {
                     endOutput = "Hello again";
-                    
+
                 }
 
                 else
@@ -59,7 +107,7 @@ namespace myBot
                 }
 
 
-                
+
                 bool isBankRequest = true;
                 var userMessage = activity.Text;
 
@@ -68,12 +116,12 @@ namespace myBot
                     endOutput = "User data cleared";
                     await stateClient.BotState.DeleteStateForUserAsync(activity.ChannelId, activity.From.Id);
                     isBankRequest = false;
-                    
+
                 }
                 //Activity reply = activity.CreateReply(endOutput);
                 //await connector.Conversations.ReplyToActivityAsync(reply);
 
-               
+
 
                 if (userMessage.ToLower().Equals("easy bank"))
                 {
@@ -135,87 +183,36 @@ namespace myBot
                 }
 
 
-                if (userMessage.ToLower().Contains("currency rate"))
-                {
-                        string[] value = userMessage.Split(' ');
-                        double AUD = rootObject.rates.AUD;
+                //if (userMessage.ToLower().Contains("currency rate"))
+                //{
 
-                        double BGN = rootObject.rates.BGN;
-                        double CAD = rootObject.rates.CAD;
-                        double GBP = rootObject.rates.GBP;
-                        double HKD = rootObject.rates.HKD;
-                        double JPY = rootObject.rates.JPY;
-                        double USD = rootObject.rates.USD;
-                        double ZAR = rootObject.rates.ZAR;
 
-                        if (value[2].ToLower() == "aud")
-                        {
-                            result = value[2].ToUpper() + " " + AUD;
-
-                        }
-
-                        if (value[2].ToLower() == "bgn")
-                        {
-                            result = value[2].ToUpper() + " " + BGN;
-                        }
-
-                        if (value[2].ToLower() == "cad")
-                        {
-                            result = value[2].ToUpper() + " " + CAD;
-                        }
-
-                        if (value[2].ToLower() == "gbp")
-                        {
-                            result = value[2].ToUpper() + " " + GBP;
-                        }
-
-                        if (value[2].ToLower() == "hkd")
-                        {
-                            result = value[2].ToUpper() + " " + HKD;
-                        }
-
-                        if (value[2].ToLower() == "jpy")
-                        {
-                            result = value[2].ToUpper() + " " + JPY;
-                        }
-
-                        if (value[2].ToLower() == "usd")
-                        {
-                            result = value[2].ToUpper() + " " + USD;
-
-                        }
-
-                        if (value[2].ToLower() == "zar")
-                        {
-                            result = value[2].ToUpper() + " " + ZAR;
-                        }
-
-                        Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
-                        replyToConversation.Recipient = activity.From;
-                        replyToConversation.Type = "message";
-                        replyToConversation.Attachments = new List<Attachment>();
-                        List<CardImage> cardImages = new List<CardImage>();
-                        cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
-                        cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
-                        List<CardAction> cardButtons = new List<CardAction>();
-                        CardAction plButton = new CardAction()
-                        {
-                            Value = "http://www.xe.com/currencyconverter/",
-                            Type = "openUrl",
-                            Title = "Click here for a converter."
-                        };
-                        cardButtons.Add(plButton);
-                        HeroCard plCard = new HeroCard()
-                        {
-                            Title = result,
-                            Subtitle = "",
-                            Images = cardImages,
-                            Buttons = cardButtons
-                        };
-                        Attachment plAttachment = plCard.ToAttachment();
-                        replyToConversation.Attachments.Add(plAttachment);
-                        var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
-                    }
+                    //    Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
+                    //    replyToConversation.Recipient = activity.From;
+                    //    replyToConversation.Type = "message";
+                    //    replyToConversation.Attachments = new List<Attachment>();
+                    //    List<CardImage> cardImages = new List<CardImage>();
+                    //    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
+                    //    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
+                    //    List<CardAction> cardButtons = new List<CardAction>();
+                    //    CardAction plButton = new CardAction()
+                    //    {
+                    //        Value = "http://www.xe.com/currencyconverter/",
+                    //        Type = "openUrl",
+                    //        Title = "Click here for a converter."
+                    //    };
+                    //    cardButtons.Add(plButton);
+                    //    HeroCard plCard = new HeroCard()
+                    //    {
+                    //        Title = result,
+                    //        Subtitle = "",
+                    //        Images = cardImages,
+                    //        Buttons = cardButtons
+                    //    };
+                    //    Attachment plAttachment = plCard.ToAttachment();
+                    //    replyToConversation.Attachments.Add(plAttachment);
+                    //    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+                    //}
 
 
 
@@ -223,19 +220,19 @@ namespace myBot
                     await connector.Conversations.ReplyToActivityAsync(reply);
                     return Request.CreateResponse(HttpStatusCode.OK);
 
-                
 
+
+                }
+                else
+                {
+                    HandleSystemMessage(activity);
+                }
+
+                var response = Request.CreateResponse(HttpStatusCode.OK);
+                return response;
             }
-            else
-            {
-                HandleSystemMessage(activity);
-            }
 
-            var response = Request.CreateResponse(HttpStatusCode.OK);
-            return response;
-        }
-
-        
+     
 
     private Activity HandleSystemMessage(Activity message)
         {
@@ -265,6 +262,88 @@ namespace myBot
 
            
             return null;
+        }
+        private static async Task<RootObject> GetEntityFromLUIS(string Query)
+        {
+            Query = Uri.EscapeDataString(Query);
+            RootObject Data = new RootObject();
+            using (HttpClient client = new HttpClient())
+            {
+                string RequestURI = "https://api.projectoxford.ai/luis/v2.0/apps/3b8aa6d8-e0b8-40a9-9ca7-2b1e002e63be?subscription-key=edefe3e05c914f71bbf5d2b2fe74648a&q=" + Query + "&verbose=true";
+                HttpResponseMessage msg = await client.GetAsync(RequestURI);
+
+                if (msg.IsSuccessStatusCode)
+                {
+                    var JsonDataResponse = await msg.Content.ReadAsStringAsync();
+                    Data = JsonConvert.DeserializeObject<RootObject>(JsonDataResponse);
+                }
+            }
+            return Data;
+
+        }
+
+        private async Task<string> GetConversion(string StockSymbol)
+        {
+            currencyobject.RootObject rootObject;
+            HttpClient client = new HttpClient();
+            string x = await client.GetStringAsync(new Uri("http://api.fixer.io/latest?base=NZD"));
+
+          rootObject = JsonConvert.DeserializeObject<currencyobject.RootObject>(x);
+
+            
+            double AUD = rootObject.rates.AUD;
+
+            double BGN = rootObject.rates.BGN;
+            double CAD = rootObject.rates.CAD;
+            double GBP = rootObject.rates.GBP;
+            double HKD = rootObject.rates.HKD;
+            double JPY = rootObject.rates.JPY;
+            double USD = rootObject.rates.USD;
+            double ZAR = rootObject.rates.ZAR;
+
+            if (StockSymbol.ToLower() == "aud")
+            {
+                result = StockSymbol.ToUpper() + " " + AUD;
+
+            }
+
+            if (StockSymbol.ToLower() == "bgn")
+            {
+                result = StockSymbol.ToUpper() + " " + BGN;
+            }
+
+            if (StockSymbol.ToLower() == "cad")
+            {
+                result = StockSymbol.ToUpper() + " " + CAD;
+            }
+
+            if (StockSymbol.ToLower() == "gbp")
+            {
+                result = StockSymbol.ToUpper() + " " + GBP;
+            }
+
+            if (StockSymbol.ToLower() == "hkd")
+            {
+                result = StockSymbol.ToUpper() + " " + HKD;
+            }
+
+            if (StockSymbol.ToLower() == "jpy")
+            {
+                result = StockSymbol.ToUpper() + " " + JPY;
+            }
+
+            if (StockSymbol.ToLower() == "usd")
+            {
+                result = StockSymbol.ToUpper() + " " + USD;
+
+            }
+
+            if (StockSymbol.ToLower() == "zar")
+            {
+                result = StockSymbol.ToUpper() + " " + ZAR;
+            }
+
+            return result;
         }
     }
 }

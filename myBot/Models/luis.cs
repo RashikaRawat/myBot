@@ -5,8 +5,7 @@ using System.Web;
 
 namespace myBot.Models
 {
-    public class audConversion
-    {
+    
 
         public class TopScoringIntent
         {
@@ -37,5 +36,5 @@ namespace myBot.Models
             public List<Entity> entities { get; set; }
         }
 
-    }
+    
 }
