@@ -209,57 +209,80 @@ namespace myBot
                     endOutput = "New timeline added [" + timeline.Date + "]";
                 }
 
-                if (userMessage.ToLower().Contains("delete record"))
+                
+                    //isBankRequest = false; endOutput = "We have deleted " + t.Name + "'s account";
+                    
+                if (userMessage.ToLower().Contains("del"))
                 {
-                    string[] delete = userMessage.Split();
                     List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
-                    endOutput = "";
-                    foreach (moodTrialDB t in timelines)
+                    foreach(moodTrialDB timeline in timelines)
                     {
-                        if (activity.From.Name.Contains(t.Name) )
+                        if (userMessage.ToLower().Substring(4) == timeline.Name.ToLower())
                         {
-                            await AzureManager.AzureManagerInstance.DeleteTimeline(t);
+                            await AzureManager.AzureManagerInstance.DeleteTimeline(timeline);
+                            endOutput = " timeline deleted [" + timeline.Date + "]";
+                            isBankRequest = false;
                         }
-                        endOutput = "We have deleted " + t.Name + "'s account" ;
-                        Activity deleted = activity.CreateReply(endOutput);
-                        await connector.Conversations.ReplyToActivityAsync(deleted);
                     }
-                    isBankRequest = false;
+                        
                 }
+
+                if (userMessage.ToLower().Contains("update"))
+                {
+                    string[] amount1 = userMessage.Split(' ');
+                    var amount = amount1[3];
+                    var name = amount1[1] + " " + amount1[2];
+                    List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
+                    foreach (moodTrialDB timeline in timelines)
+                    {
+                        if (name.ToLower() == timeline.Name.ToLower())
+                        {
+                            timeline.Cheque = amount;
+                            await AzureManager.AzureManagerInstance.UpdateTimeline(timeline);
+                            endOutput = " timeline update [" + timeline.Date + "]";
+                            isBankRequest = false;
+                        }
+                    }
+
+                }
+
+
+
+
                 //if (userMessage.ToLower().Contains("currency rate"))
                 //{
 
 
-                    //    Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
-                    //    replyToConversation.Recipient = activity.From;
-                    //    replyToConversation.Type = "message";
-                    //    replyToConversation.Attachments = new List<Attachment>();
-                    //    List<CardImage> cardImages = new List<CardImage>();
-                    //    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
-                    //    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
-                    //    List<CardAction> cardButtons = new List<CardAction>();
-                    //    CardAction plButton = new CardAction()
-                    //    {
-                    //        Value = "http://www.xe.com/currencyconverter/",
-                    //        Type = "openUrl",
-                    //        Title = "Click here for a converter."
-                    //    };
-                    //    cardButtons.Add(plButton);
-                    //    HeroCard plCard = new HeroCard()
-                    //    {
-                    //        Title = result,
-                    //        Subtitle = "",
-                    //        Images = cardImages,
-                    //        Buttons = cardButtons
-                    //    };
-                    //    Attachment plAttachment = plCard.ToAttachment();
-                    //    replyToConversation.Attachments.Add(plAttachment);
-                    //    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
-                    //}
+                //    Activity replyToConversation = activity.CreateReply("The current exchange rate for this country compared to $1 NZD is:");
+                //    replyToConversation.Recipient = activity.From;
+                //    replyToConversation.Type = "message";
+                //    replyToConversation.Attachments = new List<Attachment>();
+                //    List<CardImage> cardImages = new List<CardImage>();
+                //    cardImages.Add(new CardImage(url: "https://<ImageUrl1>"));
+                //    cardImages.Add(new CardImage(url: "https://<ImageUrl2>"));
+                //    List<CardAction> cardButtons = new List<CardAction>();
+                //    CardAction plButton = new CardAction()
+                //    {
+                //        Value = "http://www.xe.com/currencyconverter/",
+                //        Type = "openUrl",
+                //        Title = "Click here for a converter."
+                //    };
+                //    cardButtons.Add(plButton);
+                //    HeroCard plCard = new HeroCard()
+                //    {
+                //        Title = result,
+                //        Subtitle = "",
+                //        Images = cardImages,
+                //        Buttons = cardButtons
+                //    };
+                //    Attachment plAttachment = plCard.ToAttachment();
+                //    replyToConversation.Attachments.Add(plAttachment);
+                //    var reply1 = await connector.Conversations.SendToConversationAsync(replyToConversation);
+                //}
 
 
 
-                    Activity reply = activity.CreateReply(endOutput);
+                Activity reply = activity.CreateReply(endOutput);
                     await connector.Conversations.ReplyToActivityAsync(reply);
                     return Request.CreateResponse(HttpStatusCode.OK);
 
