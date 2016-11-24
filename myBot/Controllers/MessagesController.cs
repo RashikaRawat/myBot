@@ -97,7 +97,8 @@ namespace myBot
                     return Request.CreateResponse(HttpStatusCode.OK);
                 }
 
-                string endOutput = "Hello, welcome to Easy Bank";
+                string endOutput = "Hello, welcome to Easy Bank. Please tell us which country's exchange rate you would like to know.";
+
                 if (userData.GetProperty<bool>("SentGreeting"))
                 {
                     endOutput = "Hello again";
@@ -109,6 +110,8 @@ namespace myBot
                     userData.SetProperty<bool>("SentGreeting", true);
                     await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
                 }
+
+                
 
 
 
@@ -122,33 +125,41 @@ namespace myBot
                     isBankRequest = false;
 
                 }
+
+                if (userMessage.ToLower().Contains("quit"))
+                {
+                    endOutput = "Thank You for visiting Easy Contoso Bank. Have a great day";
+                    await stateClient.BotState.DeleteStateForUserAsync(activity.ChannelId, activity.From.Id);
+                    isBankRequest = false;
+
+                }
                 //Activity reply = activity.CreateReply(endOutput);
                 //await connector.Conversations.ReplyToActivityAsync(reply);
 
 
-                if (userMessage.ToLower().Substring(0, 8).Equals("set name"))
-                {
-                    string myName = "Hi " + userMessage.Substring(9) + " .";
-                    userData.SetProperty<string>("HomeCity", myName);
-                    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
-                    endOutput = myName;
-                    isBankRequest = false;
-                }
+                //if (userMessage.ToLower().Substring(0, 8).Equals("set name"))
+                //{
+                //    string myName = "Hi " + userMessage.Substring(9) + " .";
+                //    userData.SetProperty<string>("HomeCity", myName);
+                //    await stateClient.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
+                //    endOutput = myName;
+                //    isBankRequest = false;
+                //}
 
 
-                if (userMessage.ToLower().Equals("name"))
-                {
-                    string myName = userData.GetProperty<string>("HomeCity");
-                    if (myName == null)
-                    {
-                        endOutput = "Home City not assigned";
-                        isBankRequest = false;
-                    }
-                    else
-                    {
-                        activity.Text = myName;
-                    }
-                }
+                //if (userMessage.ToLower().Equals("name"))
+                //{
+                //    string myName = userData.GetProperty<string>("HomeCity");
+                //    if (myName == null)
+                //    {
+                //        endOutput = "Home City not assigned";
+                //        isBankRequest = false;
+                //    }
+                //    else
+                //    {
+                //        activity.Text = myName;
+                //    }
+                //}
 
                 if (userMessage.ToLower().Equals("easy bank"))
                 {
@@ -180,17 +191,24 @@ namespace myBot
 
                 }
 
-                if (userMessage.ToLower().Equals("get timelines"))
+                if (userMessage.ToLower().Contains("get"))
                 {
                     List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
-                    endOutput = "";
+                    
                     foreach (moodTrialDB t in timelines)
                     {
-                        endOutput += "[" + t.Date + "] People: " + t.Name + ", Balance " + t.Cheque + "\n\n";
+                        if (userMessage.ToLower().Substring(4) == t.Name.ToLower())
+                        {
+                            
+                            endOutput = " Name [" + t.Name + "]" + ", Cheque = " + t.Cheque;
+                            isBankRequest = false;
+                        }
                     }
-                    isBankRequest = false;
+                    
 
                 }
+
+                
 
                 if (userMessage.ToLower().Equals("new timeline"))
                 {
@@ -209,13 +227,13 @@ namespace myBot
                     endOutput = "New timeline added [" + timeline.Date + "]";
                 }
 
-                
-                    //isBankRequest = false; endOutput = "We have deleted " + t.Name + "'s account";
-                    
+
+                //isBankRequest = false; endOutput = "We have deleted " + t.Name + "'s account";
+
                 if (userMessage.ToLower().Contains("del"))
                 {
                     List<moodTrialDB> timelines = await AzureManager.AzureManagerInstance.GetTimelines();
-                    foreach(moodTrialDB timeline in timelines)
+                    foreach (moodTrialDB timeline in timelines)
                     {
                         if (userMessage.ToLower().Substring(4) == timeline.Name.ToLower())
                         {
@@ -224,7 +242,7 @@ namespace myBot
                             isBankRequest = false;
                         }
                     }
-                        
+
                 }
 
                 if (userMessage.ToLower().Contains("update"))
